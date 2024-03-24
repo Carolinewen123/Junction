@@ -228,26 +228,42 @@ function submitLogout() {
 
 function submitLogin() {
     var formData = new FormData(document.getElementById('loginForm'));
-
+    
+    // 使用fetch发送登录请求
     fetch('/login', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if(!response.ok) {
+            // 如果响应状态码不是200，抛出错误
+            throw new Error('Network response was not ok');
+        }
+        // 尝试将响应解析为JSON
+        return response.json();
+    })
     .then(data => {
+        // 打印返回的数据，帮助调试
+        console.log('Login response data:', data); 
+        // 检查data对象中的loggedIn属性
         if(data.loggedIn) {
-            // 登录成功
+            // 如果loggedIn为true，登录成功
             document.getElementById('loginMessage').classList.remove('hidden');
+            document.getElementById('loginMessage').textContent = 'Login successful!';
+            // 3秒后跳转
             setTimeout(function() {
-                showSection('home'); // 或者其他需要跳转到的页面
+                showSection('home');
             }, 3000);
         } else {
-            // 登录失败的处理
-            alert('Login Failed. Please try again.');
+            // 如果loggedIn不是true，处理登录失败
+            throw new Error('Login failed');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
+        // 处理任何在请求过程中抛出的错误
+        console.error('Login error:', error);
+        alert('Login Failed. Please try again.');
+        document.getElementById('loginMessage').classList.add('hidden');
     });
 }
 
