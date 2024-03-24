@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustainable Development Platform</title>
+    <style>
+        .hidden { display: none; }
+        section { margin-top: 20px; padding: 20px; border: 1px solid #ccc; }
+        nav ul { list-style-type: none; }
+        nav li { display: inline; margin-right: 10px; }
+        nav a { cursor: pointer; }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a onclick="showSection('home')">Home</a></li>
+            <li><a onclick="showSection('register')">Register</a></li>
+            <li><a onclick="showSection('login')">Login</a></li>
+            <li><a onclick="showSection('suggestions')">Submit a Suggestion</a></li>
+            <li><a onclick="showSection('activities')">Activities</a></li>
+            <li><a onclick="showSection('about')">About</a></li>
+            <li><a onclick="showSection('ideas')">Ideas</a></li>
+            <li><a onclick="submitLogout()">Logout</a></li>
+        </ul>
+    </nav>
+
+    <section id="home">Welcome to the Sustainable Development Platform</section>
+    <section id="register" class="hidden">
+        <h2>Register</h2>
+        <form method="post" action="/register">
+            <label for="regUsername">Username:</label>
+            <input type="text" id="regUsername" name="username" required><br>
+            <label for="regPassword">Password:</label>
+            <input type="password" id="regPassword" name="password" required><br>            
+            <button type="submit">Register</button>
+        </form>
+    </section>
+    <section id="login" class="hidden">
+    <h2>Login</h2>
+    <form id="loginForm" action="/login" method="post">
+        <label for="loginUsername">Username:</label>
+        <input type="text" id="loginUsername" name="username" required><br>
+        
+        <label for="loginPassword">Password:</label>
+        <input type="password" id="loginPassword" name="password" required><br>
+        <button type="button" onclick="submitLogin()">Login</button>
+    </form>
+    <div id="loginMessage" class="hidden">Log in successfully</div>
+</section>
+
+    <section id="suggestions" class="hidden">
+    <h2>Submit Your Suggestion</h2>
+    <form id="suggestionForm" method="post" action="/suggestions">
+        <label for="studentName">Your Name:</label>
+        <input type="text" id="studentName" name="student_name" required><br>
+        
+        <label for="suggestion">Your Suggestion:</label>
+        <textarea id="suggestion" name="suggestion" required></textarea><br>
+        
+        <button type="button" onclick="submitSuggestion()">Submit Suggestion</button>
+    </form>
+</section>
+
+    <section id="activities" class="hidden">
+    <h2>Activities</h2>
+    <form id="searchActivitiesForm" onsubmit="searchActivities(event)">
+    <input type="text" id="searchKeyword" name="search" placeholder="Search activities..." required><br>
+    <button type="submit">Search</button>
+    </form>
+<div id = "activitiesList"></div>
+
+    <h3>Create Your Activity</h3>
+    <form id="createActivityForm" method="post" action="/create_activity">
+        <input type="text" id="activityName" name="name" placeholder="Activity Name" required><br>
+        <input type="text" id="organizer" name="organizer" placeholder="Organizer" required><br>
+        <input type="text" id="date" name="date" placeholder="Date" required><br>
+        <input type="text" id="location" name="location" placeholder="Location" required><br>
+        <input type="number" id="scale" name="scale" placeholder="Scale" required><br>
+        <input type="text" id="slogan" name="slogan" placeholder="Slogan" required><br>
+        <textarea id="description" name="description" placeholder="Description" required></textarea><br>
+        <button type="button" onclick="submitActivity()">Create Activity</button>
+    </form>
+</section>
+
+    <section id="about" class="hidden">
+        <h2>About Us</h2>
+        <p>Email: Healtheworld@gmail.com</p>
+    </section>
+    <section id="ideas" class="hidden">
+    <h2>Ideas</h2>
+    <form method="get" action="/ideas">
+    <div id="ideasList"></div> <!-- 添加这个元素来显示ideas -->
+    </section>
+
+    <script>
+function searchActivities(event) {
+    event.preventDefault();  // 阻止表单的默认提交行为
+    var keyword = document.getElementById('searchKeyword').value;
+    
+    // 向后端发送搜索请求
+    fetch('/search_activities?search=' + encodeURIComponent(keyword))
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(activities => {
+        const activitiesList = document.getElementById('activitiesList');
+        activitiesList.innerHTML = ''; // 清空当前活动列表
+        // 遍历所有搜索到的活动
+        activities.forEach(activity => {
+            // 创建并添加活动元素到列表中
+            const activityElement = document.createElement('div');
+            activityElement.innerHTML = `<strong>Name:</strong> ${activity.name}<br>
+                                         <strong>Organizer:</strong> ${activity.organizer}<br>
+                                         <strong>Date:</strong> ${activity.date}<br>
+                                         <strong>Location:</strong> ${activity.location}<br>
+                                         <strong>Scale:</strong> ${activity.scale}<br>
+                                         <strong>Slogan:</strong> ${activity.slogan}<br>
+                                         <strong>Description:</strong> ${activity.description}<br>
+                                         <strong>Time:</strong> ${activity.time}`;
+            activitiesList.appendChild(activityElement);
+        });
+        // 确保活动列表是可见的
+        activitiesList.classList.remove('hidden');
+    })
+    .catch(error => {
+        console.error('Error loading activities:', error);
+    });
+}
+
+// 页面加载完成后，根据URL停留在相应页面
+document.addEventListener('DOMContentLoaded', function() {
+    if(window.location.pathname.endsWith('/activities')) {
+        showSection('activities');
+    } else {
+        showSection('home');
+    }
+});
+
+function submitActivity() {
+    var formData = new FormData(document.getElementById('createActivityForm'));
+
+    fetch('/create_activity', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if(response.ok) {
+            // 活动创建成功
+            alert('Created!');
+            // 可以选择在这里添加代码来清空表单或者做其他事情
+        } else {
+            // 处理错误情况
+            alert('Failed to create activity. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function submitSuggestion() {
+    var formData = new FormData(document.getElementById('suggestionForm')); // 确保你的表单有一个id="suggestionForm"
+
+    fetch('/suggestions', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if(response.ok) {
+            // 显示提交成功消息
+            alert('Suggestion submitted!');
+            // 建议提交成功，跳转到首页
+            setTimeout(function() {
+                window.location.href = '/';
+            }, 3000); // 3秒后跳转
+        } else {
+            // 处理错误情况
+            alert('Failed to submit suggestion. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+// 确保你的建议提交表单的button调用这个新函数
+// <button type="button" onclick="submitSuggestion()">Submit Suggestion</button>
+
+function showIdeas() {
+    fetch('/ideas')
+    .then(response => response.json())
+    .then(data => {
+        const ideasList = document.getElementById('ideasList');
+        ideasList.innerHTML = ''; // 清空当前列表
+        data.forEach(idea => {
+            const ideaElement = document.createElement('div');
+            // 现在也包括了用户名
+            ideaElement.textContent = `${idea.username}: ${idea.idea} (submitted at ${idea.time})`;
+            ideasList.appendChild(ideaElement);
+        });
+    })
+    .catch(error => {
+        console.error('Error loading ideas:', error);
+    });
+}
+
+// 修改showSection函数以调用showIdeas当显示“ideas”部分时
+
+function submitLogout() {
+    fetch('/logout')
+    .then(response => {
+        // Assuming the logout was successful, display a message
+        alert('Log out successfully');
+        // Redirect to the home section after the message
+        setTimeout(function() {
+            window.location.href = '/';
+        }, 3000);
+    })
+    .catch(error => {
+        console.error('Logout failed:', error);
+    });
+}
+
+function submitLogin() {
+    var formData = new FormData(document.getElementById('loginForm'));
+
+    fetch('/login', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.loggedIn) {
+            // 登录成功
+            document.getElementById('loginMessage').classList.remove('hidden');
+            setTimeout(function() {
+                showSection('home'); // 或者其他需要跳转到的页面
+            }, 3000);
+        } else {
+            // 登录失败的处理
+            alert('Login Failed. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function logout() {
+            fetch('/logout', {
+                method: 'GET'
+            })
+            .then(response => {
+                // 登出后重定向到首页
+                window.location.href = '/';
+            })
+            .catch(error => console.error('Error:', error));
+        }
+function checkLoginStatus(callback) {
+    // Here we would typically make an AJAX request to the server to check login status.
+    // For example:
+    fetch('/login/status')
+        .then(response => response.json())
+        .then(data => {
+            // Assuming the response data is an object with a boolean 'loggedIn' property.
+            callback(data.loggedIn);
+        })
+        .catch(error => {
+            console.error('Error checking login status:', error);
+            // In case of an error, we'll assume the user is not logged in.
+            callback(false);
+        });
+}
+
+function showSection(sectionId) {
+    var sections = document.querySelectorAll('section');
+    sections.forEach(function(section) {
+        section.classList.add('hidden');
+    });
+    if (sectionId === 'ideas') {
+        checkLoginStatus(function(isLoggedIn) {
+            if (!isLoggedIn) {
+                alert('You have to log in.');
+                setTimeout(function() {
+                    showSection('home');
+                }, 3000);
+            } else {
+                document.getElementById('ideas').classList.remove('hidden');
+                showIdeas(); // 调用showIdeas来加载并显示建议
+            }
+        });
+        return; // 早期返回，因为后面的逻辑已经处理了ideas部分
+    }
+    var section = document.getElementById(sectionId);
+    checkLoginStatus(function(isLoggedIn) {
+        // 如果用户未登录，并且尝试访问的不是首页、注册或登录页面
+        if (!isLoggedIn && !['home', 'register', 'login', 'about'].includes(sectionId)) {
+            alert('You have to log in.');
+            setTimeout(function() {
+                showSection('home');
+            }, 3000);
+            return;
+        }
+        // 如果用户已登录，隐藏注册和登录页面
+        if (isLoggedIn && ['register', 'login'].includes(sectionId)) {
+            showSection('home');
+            return;
+        }
+        // 显示目标部分
+        section.classList.remove('hidden');
+    });
+}
+
+// 页面加载完成后，默认显示首页
+document.addEventListener('DOMContentLoaded', function() {
+    showSection('home');
+});
+</script>
+
+
+<body>
+</html>
